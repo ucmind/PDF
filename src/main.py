@@ -67,6 +67,10 @@ def configure_llm():
 def read_pdf_content(pdf_path: str) -> str:
     """Read and extract text content from PDF"""
     try:
+        # Check if file exists to avoid crashing
+        if not os.path.exists(pdf_path):
+            return f"Error: The file '{pdf_path}' was not found."
+            
         with open(pdf_path, 'rb') as file:
             pdf_reader = PyPDF2.PdfReader(file)
             text_content = ""
@@ -77,13 +81,37 @@ def read_pdf_content(pdf_path: str) -> str:
     except Exception as e:
         return f"Error reading PDF: {str(e)}"
 
-def run():
+# ============================================================================
+# MODIFIED RUN FUNCTION TO ACCEPT INPUTS FROM CHARM
+# ============================================================================
+def run(inputs=None):
+    """
+    Main entry point. 
+    Accepts 'inputs' dictionary when running on Charm/Cloud.
+    Falls back to interactive mode if inputs are None (Local execution).
+    """
+    
     # --- Initialization Phase ---
-
-    # 1. Select File and Model (Moved inside function)
     print("=== CrewAI System Initialization ===")
-    target_pdf_file = select_pdf_file()
-    llm_config = configure_llm()
+
+    # 1. Determine PDF File and LLM Config (Cloud vs Local Logic)
+    target_pdf_file = None
+    llm_config = "gpt-4o"
+
+    if inputs and 'pdf_path' in inputs:
+        # --- CLOUD / CHARM MODE ---
+        print("[Mode] Running in Cloud/Automated Mode")
+        target_pdf_file = inputs['pdf_path']
+        print(f"Target PDF: {target_pdf_file}")
+        
+        if 'llm_model' in inputs:
+            llm_config = inputs['llm_model']
+            print(f"LLM Model: {llm_config}")
+    else:
+        # --- LOCAL / INTERACTIVE MODE ---
+        print("[Mode] Running in Local Interactive Mode")
+        target_pdf_file = select_pdf_file()
+        llm_config = configure_llm()
 
     # 2. Check Critical Keys
     if not os.getenv("OPENAI_API_KEY"):
@@ -483,7 +511,9 @@ def run():
     print(f"Code generation output:    {code_folder}")
 
     try:
-        result = crew.kickoff()
+        # We pass inputs to kickoff so that the agents have context if they need it internally,
+        # although this specific script heavily relies on the hardcoded descriptions above.
+        result = crew.kickoff(inputs=inputs if inputs else {})
         print("\n" + "="*50)
         print("WORKFLOW COMPLETE!")
         print("="*50)
