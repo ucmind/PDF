@@ -7,14 +7,11 @@ from crewai import Agent, Task, Crew, Process
 from crewai_tools import FileWriterTool, SerperDevTool, GithubSearchTool, LinkupSearchTool, EXASearchTool
 from dotenv import load_dotenv
 
-# [修改 1] load_dotenv 放在最上方確保環境變數載入
 load_dotenv()
 
-# --- Dynamic Configuration Functions (保持不變) ---
 
 def select_pdf_file():
     """Scans the directory for PDF files and prompts the user to select one."""
-    # [修改] 增加路徑判斷，確保是在當前執行目錄尋找
     pdf_files = glob.glob("*.pdf")
     
     if not pdf_files:
@@ -80,7 +77,6 @@ def read_pdf_content(pdf_path: str) -> str:
     except Exception as e:
         return f"Error reading PDF: {str(e)}"
 
-# [修改 2] 核心邏輯全部封裝進 run() 函數
 def run():
     # --- Initialization Phase ---
 
@@ -146,8 +142,6 @@ def run():
     print(f"\nReading PDF: {target_pdf_file}...")
     pdf_content = read_pdf_content(target_pdf_file)
 
-    # [修改 3] Agent 定義移入函數內，因為它們需要 llm_config
-    # --- Agent Definitions ---
 
     project_analyst = Agent(
         role='Project Analyst',
@@ -196,8 +190,6 @@ def run():
         llm=llm_config
     )
 
-    # [修改 4] Task 定義移入函數內，因為它們需要 pdf_content (動態變數)
-    # --- Task Definitions ---
 
     # Task 1: Project Context Analysis
     project_context_task = Task(
@@ -458,7 +450,6 @@ def run():
 
     # --- Crew Execution ---
     
-    # [修改 5] Crew 實例化也移入函數內
     crew = Crew(
         agents=[project_analyst, resource_search_agent, coding_agent],
         tasks=[
@@ -492,7 +483,6 @@ def run():
     print(f"Code generation output:    {code_folder}")
 
     try:
-        # [修改 6] 執行 kickoff
         result = crew.kickoff()
         print("\n" + "="*50)
         print("WORKFLOW COMPLETE!")
@@ -504,6 +494,5 @@ def run():
         print(f"\nCRITICAL ERROR during execution: {e}")
         raise e
 
-# [修改 7] 加入這個區塊，讓您可以直接用 `python main.py` 執行
 if __name__ == "__main__":
     run()
