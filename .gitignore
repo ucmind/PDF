@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+project_analysis_output/
+resource_output/
+code_output/

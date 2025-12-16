@@ -1,10 +1,10 @@
 import os
 import sys
 import glob
-import PyPDF2
+import pypdf
 from pathlib import Path
 from crewai import Agent, Task, Crew, Process
-from crewai_tools import FileWriterTool, SerperDevTool, GithubSearchTool, LinkupSearchTool, EXASearchTool
+from crewai_tools import FileWriterTool, SerperDevTool, GithubSearchTool, EXASearchTool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -72,7 +72,7 @@ def read_pdf_content(pdf_path: str) -> str:
             return f"Error: The file '{pdf_path}' was not found."
             
         with open(pdf_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_reader = pypdf.PdfReader(file)
             text_content = ""
             for page_num in range(len(pdf_reader.pages)):
                 page = pdf_reader.pages[page_num]
@@ -81,9 +81,6 @@ def read_pdf_content(pdf_path: str) -> str:
     except Exception as e:
         return f"Error reading PDF: {str(e)}"
 
-# ============================================================================
-# MODIFIED RUN FUNCTION TO ACCEPT INPUTS FROM CHARM
-# ============================================================================
 def run(inputs=None):
     """
     Main entry point. 
@@ -96,7 +93,7 @@ def run(inputs=None):
 
     # 1. Determine PDF File and LLM Config (Cloud vs Local Logic)
     target_pdf_file = None
-    llm_config = "gpt-4o"
+    llm_config = "gpt-4o" # Default fallback
 
     if inputs and 'pdf_path' in inputs:
         # --- CLOUD / CHARM MODE ---
@@ -104,9 +101,22 @@ def run(inputs=None):
         target_pdf_file = inputs['pdf_path']
         print(f"Target PDF: {target_pdf_file}")
         
-        if 'llm_model' in inputs:
+        # --- LOGIC UPDATE: CHECK FOR CHARM FREE TIER OVERRIDE ---
+        env_model = os.getenv("OPENAI_MODEL_NAME")
+        
+        if env_model:
+            # If the platform injects a specific model (e.g. Free Tier gpt-4o-mini), force use it.
+            print(f"[Override] Detected ENV model enforcement: {env_model}")
+            llm_config = env_model
+        elif 'llm_model' in inputs:
+            # Otherwise use user selection from inputs
             llm_config = inputs['llm_model']
             print(f"LLM Model: {llm_config}")
+        else:
+            # Default fallback
+            llm_config = "gpt-4o"
+            print(f"LLM Model: {llm_config} (Default)")
+            
     else:
         # --- LOCAL / INTERACTIVE MODE ---
         print("[Mode] Running in Local Interactive Mode")
@@ -151,17 +161,17 @@ def run(inputs=None):
     else:
         print("- Skipping GithubSearchTool (GITHUB_TOKEN missing)")
 
-    # Initialize Linkup Tool (Optional)
-    if os.getenv("LINKUP_API_KEY"):
-        print("- Loading LinkupSearchTool")
-        linkup_tool = LinkupSearchTool(api_key=os.getenv("LINKUP_API_KEY"))
-        resource_tools.append(linkup_tool)
+    # 修改 2：完全刪除了 LinkupSearchTool 的初始化區塊
+    # (因為這個工具目前不存在於套件中)
 
     # Initialize EXA Tool (Optional)
     if os.getenv("EXA_API_KEY"):
         print("- Loading EXASearchTool")
-        exascience_tool = EXASearchTool(api_key=os.getenv("EXA_API_KEY"))
-        resource_tools.append(exascience_tool)
+        try:
+            exascience_tool = EXASearchTool(api_key=os.getenv("EXA_API_KEY"))
+            resource_tools.append(exascience_tool)
+        except Exception as e:
+            print(f"Warning: Could not load EXASearchTool: {e}")
 
 
     # --- Core Logic ---
