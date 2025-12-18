@@ -66,6 +66,8 @@ def configure_llm():
 
 def read_pdf_content(pdf_path: str) -> str:
     """Read and extract text content from PDF"""
+    if not pdf_path:
+        return ""
     try:
         # Check if file exists to avoid crashing
         if not os.path.exists(pdf_path):
@@ -91,37 +93,47 @@ def run(inputs=None):
     # --- Initialization Phase ---
     print("=== CrewAI System Initialization ===")
 
-    # 1. Determine PDF File and LLM Config (Cloud vs Local Logic)
-    target_pdf_file = None
+    # 1. Determine Input Content and LLM Config
+    project_content = ""
     llm_config = "gpt-4o" # Default fallback
+    target_pdf_file = None
 
-    if inputs and 'pdf_path' in inputs:
-        # --- CLOUD / CHARM MODE ---
+    if inputs:
         print("[Mode] Running in Cloud/Automated Mode")
-        target_pdf_file = inputs['pdf_path']
-        print(f"Target PDF: {target_pdf_file}")
         
-        # --- LOGIC UPDATE: CHECK FOR CHARM FREE TIER OVERRIDE ---
+        if 'project_text' in inputs and inputs['project_text'] and str(inputs['project_text']).strip():
+            print("[Input Source] Using Direct Text Input.")
+            project_content = inputs['project_text']
+            
+        elif 'pdf_path' in inputs and inputs['pdf_path']:
+            print(f"[Input Source] Using PDF file: {inputs['pdf_path']}")
+            target_pdf_file = inputs['pdf_path']
+            project_content = read_pdf_content(target_pdf_file)
+        
+        else:
+            print("Warning: No valid input found in 'inputs' dictionary.")
+
         env_model = os.getenv("OPENAI_MODEL_NAME")
         
         if env_model:
-            # If the platform injects a specific model (e.g. Free Tier gpt-4o-mini), force use it.
             print(f"[Override] Detected ENV model enforcement: {env_model}")
             llm_config = env_model
         elif 'llm_model' in inputs:
-            # Otherwise use user selection from inputs
             llm_config = inputs['llm_model']
             print(f"LLM Model: {llm_config}")
         else:
-            # Default fallback
-            llm_config = "gpt-4o"
             print(f"LLM Model: {llm_config} (Default)")
             
     else:
-        # --- LOCAL / INTERACTIVE MODE ---
         print("[Mode] Running in Local Interactive Mode")
         target_pdf_file = select_pdf_file()
+        project_content = read_pdf_content(target_pdf_file)
         llm_config = configure_llm()
+
+    if not project_content or len(project_content) < 10:
+        print("CRITICAL ERROR: No project content available to analyze.")
+        print("Please provide either a 'pdf_path' or 'project_text'.")
+        return "Execution Failed: No Input Content"
 
     # 2. Check Critical Keys
     if not os.getenv("OPENAI_API_KEY"):
@@ -161,9 +173,6 @@ def run(inputs=None):
     else:
         print("- Skipping GithubSearchTool (GITHUB_TOKEN missing)")
 
-    # 修改 2：完全刪除了 LinkupSearchTool 的初始化區塊
-    # (因為這個工具目前不存在於套件中)
-
     # Initialize EXA Tool (Optional)
     if os.getenv("EXA_API_KEY"):
         print("- Loading EXASearchTool")
@@ -176,18 +185,13 @@ def run(inputs=None):
 
     # --- Core Logic ---
 
-    # Read the content of the selected PDF
-    print(f"\nReading PDF: {target_pdf_file}...")
-    pdf_content = read_pdf_content(target_pdf_file)
-
-
     project_analyst = Agent(
         role='Project Analyst',
-        goal='Analyze project documents to identify risks, strengths, and opportunities.',
+        goal='Analyze project documents/text to identify risks, strengths, and opportunities.',
         backstory=(
-            "You are a skilled project analyst who can read project documents and "
+            "You are a skilled project analyst who can read project requirements (PDF or text) and "
             "extract meaningful insights, risks, and opportunities. "
-            "You have access to the full project document content and can research "
+            "You have access to the full project content and can research "
             "similar projects on the web to provide comprehensive market analysis."
         ),
         tools=analyst_tools,
@@ -232,26 +236,25 @@ def run(inputs=None):
     # Task 1: Project Context Analysis
     project_context_task = Task(
         description=(
-            f"CRITICAL: You MUST read the PDF content from the input context and extract REAL information.\n\n"
+            f"CRITICAL: You MUST read the provided project content (Text or PDF extraction) and extract REAL information.\n\n"
             f"SPECIFIC INSTRUCTIONS:\n"
-            f"1. Look at the 'full_content' field in the input\n"
-            f"2. Extract the actual project name from the 'project_name' field\n"
-            f"3. Find real requirements mentioned in the PDF content\n"
-            f"4. Identify actual technology stack mentioned in the 'technology_stack' field\n"
-            f"5. Extract real project objectives and scope from the PDF text\n"
-            f"6. Find actual constraints and limitations mentioned\n"
-            f"7. Identify real dependencies and relationships\n"
-            f"8. Extract actual risks and mitigation strategies\n"
-            f"9. Find real timeline and milestones from the 'timeline_info' field\n"
-            f"10. Extract actual team information and roles from the 'team_info' field\n"
-            f"11. Find real budget and resource information from the 'budget_info' field\n\n"
+            f"1. Extract the actual project name (if mentioned)\n"
+            f"2. Find real requirements mentioned in the content\n"
+            f"3. Identify actual technology stack if mentioned\n"
+            f"4. Extract real project objectives and scope\n"
+            f"5. Find actual constraints and limitations mentioned\n"
+            f"6. Identify real dependencies and relationships\n"
+            f"7. Extract actual risks and mitigation strategies\n"
+            f"8. Find real timeline and milestones info\n"
+            f"9. Extract actual team information and roles\n"
+            f"10. Find real budget and resource information\n\n"
             f"WEB RESEARCH: Use SerperDevTool to search for similar AI-powered platforms and analyze:\n"
             f"- Current market leaders\n"
             f"- Their key features and pricing\n"
             f"- Market gaps and opportunities\n\n"
             f"USE FileWriterTool to write this to '{output_folder}/project_analysis.md'\n"
-            f"DO NOT use placeholders like [Detail] or [Project Name] - use REAL data from the PDF!\n\n"
-            f"Project Document Content:\n{pdf_content}"
+            f"DO NOT use placeholders - use REAL data from the input content!\n\n"
+            f"Project Content:\n{project_content}"
         ),
         expected_output=(
             f"A REAL project analysis report saved as '{output_folder}/project_analysis.md' containing extracted data and market research."
@@ -262,16 +265,16 @@ def run(inputs=None):
     # Task 2: Objective Clarification
     objective_task = Task(
         description=(
-            f"CRITICAL: Based on the ACTUAL PDF content, break down real project goals into specific objectives.\n\n"
+            f"CRITICAL: Based on the ACTUAL project content, break down real project goals into specific objectives.\n\n"
             f"SPECIFIC INSTRUCTIONS:\n"
-            f"1. Extract the actual project goals mentioned in the PDF\n"
-            f"2. Identify real secondary goals from the PDF content\n"
-            f"3. Find specific acceptance criteria mentioned in the PDF\n"
+            f"1. Extract the actual project goals mentioned\n"
+            f"2. Identify real secondary goals\n"
+            f"3. Find specific acceptance criteria mentioned\n"
             f"4. Determine recommended project phases based on the real scope\n\n"
             f"WEB RESEARCH: Use SerperDevTool to research market validation strategies and industry benchmarks.\n\n"
             f"USE FileWriterTool to write this to '{output_folder}/project_objectives.md'\n"
-            f"DO NOT use placeholders - use REAL data from the PDF!\n\n"
-            f"Project Document Content:\n{pdf_content}"
+            f"DO NOT use placeholders - use REAL data from the content!\n\n"
+            f"Project Content:\n{project_content}"
         ),
         expected_output=(
             f"A REAL objectives document saved as '{output_folder}/project_objectives.md' containing goals, phases, and benchmarks."
@@ -282,7 +285,7 @@ def run(inputs=None):
     # Task 3: Technical Feasibility
     technical_task = Task(
         description=(
-            f"CRITICAL: Evaluate the technical complexity of the ACTUAL project described in the PDF content.\n\n"
+            f"CRITICAL: Evaluate the technical complexity of the ACTUAL project described in the content.\n\n"
             f"SPECIFIC INSTRUCTIONS:\n"
             f"1. Analyze the real technology stack\n"
             f"2. Assess the actual project complexity based on real requirements\n"
@@ -290,7 +293,7 @@ def run(inputs=None):
             f"4. Recommend project-specific fallback solutions\n\n"
             f"WEB RESEARCH: Research latest tech stacks, API limitations, and technical challenges for this specific domain.\n\n"
             f"USE FileWriterTool to write this to '{output_folder}/technical_assessment.md'\n"
-            f"Project Document Content:\n{pdf_content}"
+            f"Project Content:\n{project_content}"
         ),
         expected_output=(
             f"A REAL technical assessment saved as '{output_folder}/technical_assessment.md' containing complexity ratings and technical analysis."
@@ -301,7 +304,7 @@ def run(inputs=None):
     # Task 4: Resource Planning
     resource_task = Task(
         description=(
-            f"CRITICAL: Based on the ACTUAL project requirements from the PDF, determine what real resources are needed.\n\n"
+            f"CRITICAL: Based on the ACTUAL project requirements, determine what real resources are needed.\n\n"
             f"SPECIFIC INSTRUCTIONS:\n"
             f"1. Identify real datasets needed for the specific project\n"
             f"2. Determine actual documentation requirements\n"
@@ -309,7 +312,7 @@ def run(inputs=None):
             f"4. Identify actual APIs and services required\n\n"
             f"WEB RESEARCH: Research current costs for development services, API pricing, and hosting costs.\n\n"
             f"USE FileWriterTool to write this to '{output_folder}/resource_planning.md'\n"
-            f"Project Document Content:\n{pdf_content}"
+            f"Project Content:\n{project_content}"
         ),
         expected_output=(
             f"A REAL resource plan saved as '{output_folder}/resource_planning.md' containing dataset needs, tool requirements, and cost estimates."
@@ -521,8 +524,6 @@ def run(inputs=None):
     print(f"Code generation output:    {code_folder}")
 
     try:
-        # We pass inputs to kickoff so that the agents have context if they need it internally,
-        # although this specific script heavily relies on the hardcoded descriptions above.
         result = crew.kickoff(inputs=inputs if inputs else {})
         print("\n" + "="*50)
         print("WORKFLOW COMPLETE!")

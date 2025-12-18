@@ -1,28 +1,38 @@
-version: "0.4.0"
+version: "0.4.1"
 
 persona:
-  name: "SaaS Builder Crew"
-  description: "Turns PDF requirements into analysis, resources, and MVP code."
+  name: "SaaS Launchpad Crew" 
+  version: "0.1.9" 
+  
+  description: "Your AI co-founder team. Instantly turns ideas (PDF/Text) into analysis, tech stacks, and MVP code."
   
   full_description: |
-    # SaaS Project Builder
-    This crew consists of three specialized agents:
-    1. **Project Analyst**: Extracts requirements from PDF and assesses technical feasibility.
-    2. **Resource Specialist**: Searches GitHub, Kaggle, and ArXiv for existing tools and datasets.
-    3. **Senior Developer**: Generates system architecture, boilerplate code, and testing frameworks.
+    # Turn Your Idea into a Launch-Ready Project
     
-    ## Output
-    - Comprehensive Project Analysis (Markdown)
-    - Curated Resource List (Markdown)
-    - Complete MVP Project Code Structure (Python)
+    Meet your new technical co-founder team. The **SaaS Launchpad Crew** is an autonomous squad of AI agents designed to accelerate your project's zero-to-one phase.
+    
+    Whether you have a detailed PDF spec or just a rough idea in text, this crew will research, analyze, and build the foundation for you.
+    
+    ## The Crew
+    * Strategic Analyst: Dissects your requirements, identifies risks, and performs deep market research.
+    * Resource Hunter: Scours GitHub, ArXiv, and Kaggle to find existing tools, preventing you from reinventing the wheel.
+    * Lead Architect: Designs a scalable system architecture and generates production-ready MVP boilerplate code.
+    
+    ## What You Get 
+    1.  Deep-Dive Analysis: Market gaps, technical feasibility, and objective breakdowns.
+    2.  Smart Resource List: Curated APIs, datasets, and open-source libraries relevant to your idea.
+    3.  Codebase Starter Kit: A complete Python project structure with core components, API integrations, and tests pre-written.
+    
+    ## How to Use
+    Simply upload a **Requirements PDF** OR paste your **Project Idea** directly in the text box. The crew handles the rest.
 
   authors: ["Rainy"] 
-  tags: ["development", "coding", "analysis", "crewai", "saas"]
+  tags: ["startup", "mvp", "analysis", "coding"]
   license: "MIT" 
   
   assets:
-    icon: "https://raw.githubusercontent.com/xzz754233/PDF/main/assets/icon.png" 
-    banner: "https://raw.githubusercontent.com/xzz754233/PDF/main/assets/banner.jpg"
+    icon: "https://raw.githubusercontent.com/ucmind/PDF/main/assets/icon.png" 
+    banner: "https://raw.githubusercontent.com/ucmind/PDF/main/assets/banner.png"
 
 pricing:
   type: "free"
@@ -30,25 +40,28 @@ pricing:
 interface:
   input:
     type: "object"
-    required: ["pdf_path"]
     properties:
       pdf_path:
         type: "string"
-        title: "Project Requirement PDF"
-        description: "Upload your requirements file here."
+        title: "📄 Upload Requirements (PDF)"
+        description: "Have a detailed spec? Upload it here. (Optional)"
         x-ui-widget: "file" 
-        default: "requirements.pdf"
+      
+      project_text:
+        type: "string"
+        title: "📝 ...Or Describe Your Idea"
+        description: "Paste your raw ideas, goals, or feature lists here."
+        x-ui-widget: "textarea"
       
       llm_model:
         type: "string"
-        title: "LLM Model"
-        description: "The model to use for analysis and coding."
+        title: "Intelligence Level"
+        description: "Choose the model power. GPT-4o is recommended for coding tasks."
         default: "gpt-4o"
-        enum: ["gpt-4o", "gpt-4-turbo", "openai/gpt-5-chat-latest"]
 
   output:
     type: "object"
-    description: "Returns the final execution summary and file paths."
+    description: "Returns a zip file containing the analysis reports and the generated codebase."
 
   state:
     format: "json"
