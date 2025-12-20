@@ -1,37 +1,32 @@
 version: "0.4.1"
 
 persona:
-  name: "SaaS Launchpad Crew" 
-  version: "0.1.9" 
+  name: "SaaS Launchpad (Lite)"
+  version: "0.1.0"
   
-  description: "Your AI co-founder team. Instantly turns ideas (PDF/Text) into analysis, tech stacks, and MVP code."
+  description: "Rapid MVP tester. Converts ideas into Specs, Tech Stack, and Skeleton Code in 3 steps."
   
   full_description: |
-    # Turn Your Idea into a Launch-Ready Project
+    # SaaS Launchpad - Lite Version
     
-    Meet your new technical co-founder team. The **SaaS Launchpad Crew** is an autonomous squad of AI agents designed to accelerate your project's zero-to-one phase.
+    A lightweight, streamlined version of the SaaS Launchpad Crew designed for rapid iteration and testing.
     
-    Whether you have a detailed PDF spec or just a rough idea in text, this crew will research, analyze, and build the foundation for you.
+    ## The 3-Step Workflow
+    1. **Spec Analysis**: Breaks down your idea into core features and identifies risks.
+    2. **Tech Stack**: Recommends the best Python libraries and APIs.
+    3. **Skeleton Code**: Generates a single-file `main.py` with the complete architectural skeleton.
     
-    ## The Crew
-    * Strategic Analyst: Dissects your requirements, identifies risks, and performs deep market research.
-    * Resource Hunter: Scours GitHub, ArXiv, and Kaggle to find existing tools, preventing you from reinventing the wheel.
-    * Lead Architect: Designs a scalable system architecture and generates production-ready MVP boilerplate code.
+    ## Best For
+    - Rapid prototyping
+    - Testing CrewAI logic
+    - Debugging prompt effectiveness
     
-    ## What You Get 
-    1.  Deep-Dive Analysis: Market gaps, technical feasibility, and objective breakdowns.
-    2.  Smart Resource List: Curated APIs, datasets, and open-source libraries relevant to your idea.
-    3.  Codebase Starter Kit: A complete Python project structure with core components, API integrations, and tests pre-written.
-    
-    ## How to Use
-    Simply upload a **Requirements PDF** OR paste your **Project Idea** directly in the text box. The crew handles the rest.
-
-  authors: ["Rainy"] 
-  tags: ["startup", "mvp", "analysis", "coding"]
-  license: "MIT" 
+  authors: ["Rainy"]
+  tags: ["lite", "testing", "mvp", "python"]
+  license: "MIT"
   
   assets:
-    icon: "https://raw.githubusercontent.com/ucmind/PDF/main/assets/icon.png" 
+    icon: "https://raw.githubusercontent.com/ucmind/PDF/main/assets/icon.png"
     banner: "https://raw.githubusercontent.com/ucmind/PDF/main/assets/banner.png"
 
 pricing:
@@ -40,28 +35,23 @@ pricing:
 interface:
   input:
     type: "object"
+    required: ["project_text"]
     properties:
-      pdf_path:
-        type: "string"
-        title: "📄 Upload Requirements (PDF)"
-        description: "Have a detailed spec? Upload it here. (Optional)"
-        x-ui-widget: "file" 
-      
       project_text:
         type: "string"
-        title: "📝 ...Or Describe Your Idea"
-        description: "Paste your raw ideas, goals, or feature lists here."
+        title: "📝 Project Idea"
+        description: "Describe your idea simply (e.g., 'An AI agent that summarizes news')."
         x-ui-widget: "textarea"
       
       llm_model:
         type: "string"
-        title: "Intelligence Level"
-        description: "Choose the model power. GPT-4o is recommended for coding tasks."
+        title: "Model"
+        description: "Select the model for the crew."
         default: "gpt-4o"
 
   output:
     type: "object"
-    description: "Returns a zip file containing the analysis reports and the generated codebase."
+    description: "Returns the 3 generated markdown/python files."
 
   state:
     format: "json"
@@ -72,21 +62,21 @@ runtime:
   adapter:
     type: "crewai"
     
-    entry_point: "src.main:run"
+    # 指向上一段程式碼中的主函數名稱
+    # 如果你的 Python 檔名是 main.py，且函數名是 run_lite_crew，則保持如下：
+    entry_point: "src.main:run_lite_crew"
     
     environment_variables:
       - "OPENAI_API_KEY"
       - "SERPER_API_KEY"
-      - "GITHUB_TOKEN"
-      - "LINKUP_API_KEY" 
-      - "EXA_API_KEY"    
+      # 移除了 GITHUB_TOKEN, LINKUP, EXA 以配合 Lite 版本的依賴瘦身
 
   injections:
-    llm_client: true 
+    llm_client: true
 
 policies:
   allow_internet_access: true
-  max_steps: 100 
+  max_steps: 50
   human_in_the_loop:
-    enabled: true
-    triggers: ["GithubSearchTool"]
+    # Lite 版本關閉人工介入，讓流程一次跑完以便測試
+    enabled: false
