@@ -3,95 +3,108 @@ from crewai import Agent, Task, Crew, Process
 from crewai_tools import SerperDevTool, FileWriterTool
 from dotenv import load_dotenv
 
-# 載入 .env 中的 API KEY (需要 OPENAI_API_KEY 和 SERPER_API_KEY)
+# Load API keys from .env (Requires OPENAI_API_KEY and SERPER_API_KEY)
+# Note: CrewAI will automatically use the OPENAI_MODEL_NAME from .env if set.
 load_dotenv()
 
 def run_lite_crew():
-    print("=== 啟動 SaaS Launchpad Crew (Lite Version) ===")
+    print("=== Starting SaaS Launchpad Crew (Lite Version) ===")
     
-    # 1. 獲取用戶輸入 (取代原本的 PDF 讀取)
-    idea = input("\n請輸入你的專案點子 (例如: 一個幫我自動記帳的 AI Line Bot): ")
+    # 1. Get User Input
+    idea = input("\nPlease enter your project idea (e.g., An AI Line Bot that tracks my expenses): ")
     if not idea:
-        print("未輸入點子，程式結束。")
+        print("No idea entered. Exiting...")
         return
 
-    # 2. 初始化核心工具 (只保留搜索和寫檔)
+    # 2. Initialize Core Tools
     search_tool = SerperDevTool()
     file_writer = FileWriterTool()
 
-    # 3. 定義 Agents (保留原本的三個角色，但 Backstory 精簡化)
+    # 3. Define Agents
     
-    # 角色 A: 分析師
+    # Agent A: The Analyst
+    # Responsible for breaking down the abstract idea into concrete requirements.
     analyst = Agent(
-        role='首席產品分析師',
-        goal='分析用戶點子，產出明確的功能規格書 (PRD)',
-        backstory='你擅長將模糊的點子轉化為邏輯清晰的開發文檔，並能識別潛在的市場風險。',
+        role='Lead Product Analyst',
+        goal='Analyze the user idea and produce a clear Product Requirements Document (PRD).',
+        backstory=(
+            "You are an expert at translating vague ideas into logical development "
+            "documentation and identifying potential market risks."
+        ),
         tools=[search_tool, file_writer],
         verbose=True,
         memory=True
     )
 
-    # 角色 B: 資源獵人
+    # Agent B: The Resource Hunter
+    # Responsible for finding existing tools to prevent reinventing the wheel.
     resource_hunter = Agent(
-        role='技術資源探勘者',
-        goal='尋找最適合的 Python 庫、API 和開源專案來實作需求',
-        backstory='你熟悉 Python 生態系與 Github，總能找到現成的工具來避免重複造輪子。',
+        role='Tech Resource Scout',
+        goal='Find the most suitable Python libraries, APIs, and open-source projects.',
+        backstory=(
+            "You are deeply familiar with the Python ecosystem and GitHub. "
+            "You always find existing tools and libraries to accelerate development."
+        ),
         tools=[search_tool, file_writer],
         verbose=True,
         memory=True
     )
 
-    # 角色 C: 架構師
+    # Agent C: The Architect
+    # Responsible for synthesizing the spec and stack into a code structure.
     architect = Agent(
-        role='資深技術架構師',
-        goal='根據分析與資源，產出 MVP 的核心程式碼結構',
-        backstory='你擅長快速搭建可運行的 MVP，注重代碼的簡潔與模組化。',
-        tools=[file_writer], # 架構師通常不需要上網，專注寫 Code
+        role='Senior Technical Architect',
+        goal='Produce the core MVP code structure based on analysis and resources.',
+        backstory=(
+            "You excel at rapidly building functional MVPs. "
+            "You focus on code simplicity, modularity, and best practices."
+        ),
+        tools=[file_writer], # The architect focuses on writing code, not searching.
         verbose=True,
         memory=True
     )
 
-    # 4. 定義任務 (大幅合併，變為 3 個核心任務)
+    # 4. Define Tasks (Consolidated into 3 core steps)
 
-    # 任務 1: 產品規格 (合併了原本的 Context, Objective, Feasibility)
+    # Task 1: Specification & Analysis
     task_analysis = Task(
         description=(
-            f"針對用戶的點子：'{idea}' 進行分析。\n"
-            "1. 定義 3-5 個核心功能 (MVP scope)。\n"
-            "2. 識別潛在的技術難點。\n"
-            "3. 使用 search_tool 搜尋市面上的類似產品，列出 2 個競品。\n"
-            "將結果寫入 'lite_output/1_spec.md'。"
+            f"Analyze the user's idea: '{idea}'.\n"
+            "1. Define 3-5 core features (MVP scope).\n"
+            "2. Identify potential technical challenges.\n"
+            "3. Use search_tool to find similar products and list 2 competitors.\n"
+            "Write the result to 'lite_output/1_spec.md'."
         ),
-        expected_output="一份包含功能列表、難點與競品的 Markdown 文件。",
+        expected_output="A Markdown document containing the feature list, technical challenges, and competitor analysis.",
         agent=analyst
     )
 
-    # 任務 2: 技術堆疊 (合併了原本的 Resource, Discovery, Dataset)
+    # Task 2: Tech Stack Selection
     task_resources = Task(
         description=(
-            "根據分析師的規格書，推薦技術堆疊。\n"
-            "1. 搜尋並列出最適合的 3 個 Python Library (需包含 pip 安裝指令)。\n"
-            "2. 如果需要外部 API (如 OpenAI, Line, Weather)，請列出推薦的服務商。\n"
-            "將結果寫入 'lite_output/2_tech_stack.md'。"
+            "Based on the analyst's spec, recommend the technology stack.\n"
+            "1. Search and list the best 3 Python libraries (include 'pip install' commands).\n"
+            "2. If external APIs (e.g., OpenAI, Line, Weather) are required, list recommended providers.\n"
+            "Write the result to 'lite_output/2_tech_stack.md'."
         ),
-        expected_output="一份包含 Python 套件清單與 API 推薦的 Markdown 文件。",
+        expected_output="A Markdown document containing the Python package list and API recommendations.",
         agent=resource_hunter
     )
 
-    # 任務 3: 核心代碼 (合併了原本的 Architecture, Template, Code)
+    # Task 3: Skeleton Code Generation
     task_coding = Task(
         description=(
-            "根據規格書與技術堆疊，撰寫一份核心的 'main.py'。\n"
-            "1. 這不是要寫出完整的產品，而是 '骨架 (Skeleton)'。\n"
-            "2. 包含必要的 imports, 類別定義 (Class) 和函數佔位符 (pass)。\n"
-            "3. 在程式碼中加入詳細註解，說明每個區塊的作用。\n"
-            "將完整的 Python 程式碼寫入 'lite_output/3_mvp_skeleton.py'。"
+            "Based on the spec and tech stack, write the core 'main.py'.\n"
+            "1. This is a 'Skeleton', not the full product.\n"
+            "2. Include necessary imports, class definitions, and function placeholders (pass).\n"
+            "3. Add detailed comments explaining the purpose of each block.\n"
+            "Write the complete Python code to 'lite_output/3_mvp_skeleton.py'."
         ),
-        expected_output="一個可執行的 Python 檔案，包含完整的架構骨架。",
+        expected_output="An executable Python file containing the complete architectural skeleton.",
         agent=architect
     )
 
-    # 5. 組建與執行 Crew
+    # 5. Assemble and Execute the Crew
     crew = Crew(
         agents=[analyst, resource_hunter, architect],
         tasks=[task_analysis, task_resources, task_coding],
@@ -101,7 +114,7 @@ def run_lite_crew():
     result = crew.kickoff()
     
     print("\n\n########################")
-    print("## 任務完成！輸出檔案位於 lite_output/ 目錄 ##")
+    print("## Workflow Complete! Output files located in 'lite_output/' ##")
     print("########################\n")
     print(result)
 
