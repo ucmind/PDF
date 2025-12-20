@@ -11,9 +11,9 @@ python = ">=3.10,<3.13"
 crewai = "^0.85.0"
 crewai-tools = "^0.14.0"
 python-dotenv = "^1.0.0"
+setuptools = "^75.0.0"
 
 [tool.poetry.scripts]
-# 這裡對應到 src/main.py 裡的 run_lite_crew 函數
 start = "src.main:run_lite_crew"
 
 [build-system]
