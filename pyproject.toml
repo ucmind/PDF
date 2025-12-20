@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "saas-builder-crew"
+name = "saas-launchpad-lite"
 version = "0.1.0"
-description = "Turns PDF requirements into analysis, resources, and MVP code."
+description = "Lightweight AI Crew for converting ideas to MVP specs and skeletons."
 authors = ["Rainy"]
 readme = "README.md"
 packages = [{include = "src"}]
@@ -10,12 +10,11 @@ packages = [{include = "src"}]
 python = ">=3.10,<3.13"
 crewai = "^0.85.0"
 crewai-tools = "^0.14.0"
-pypdf = "^5.0.0"
 python-dotenv = "^1.0.0"
-setuptools = "^80.9.0"
 
 [tool.poetry.scripts]
-start = "src.main:run"
+# 這裡對應到 src/main.py 裡的 run_lite_crew 函數
+start = "src.main:run_lite_crew"
 
 [build-system]
 requires = ["poetry-core"]
