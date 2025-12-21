@@ -65,6 +65,15 @@ class PDFGeneratorTool(BaseTool):
 
             if pisa_status.err:
                 return f"Error creating PDF: {pisa_status.err}"
+            
+            # [修改點 1] 清理中間產物 (PDF 生成成功後，刪除 md 檔)
+            for fpath in files_to_merge:
+                if os.path.exists(fpath):
+                    try:
+                        os.remove(fpath)
+                    except OSError as e:
+                        print(f"Warning: Could not remove temp file {fpath}: {e}")
+
             return f"Successfully compiled PDF report at: {output_filename}"
             
         except Exception as e:
@@ -144,14 +153,15 @@ def run_lite_crew(inputs=None):
     )
 
     # Task 4: 觸發 PDF 生成
-    # Agent 只需要呼叫工具，不需要傳遞內容，因為工具會自己去讀上面存好的檔案
+    # [修改點 2] 修改 Description 強制 Agent 只回覆 DONE，避免與工具的回傳重複
     task_report = Task(
         description=(
             "The previous tasks have already saved the files.\n"
             "You just need to call the 'Generate PDF Report' tool.\n"
-            "Set the output_filename to 'lite_output/final_report.pdf'."
+            "Set output_filename to 'lite_output/final_report.pdf'.\n"
+            "In your final answer, just say 'DONE' and nothing else."
         ),
-        expected_output="Success message from the tool.",
+        expected_output="The word 'DONE'.",
         agent=architect
     )
 
