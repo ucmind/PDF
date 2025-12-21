@@ -2,12 +2,12 @@ version: "0.4.1"
 
 persona:
   name: "SaaS Launchpad (Lite)"
-  version: "0.1.6"
+  version: "0.1.7"
   
   description: "Rapid MVP Architect. Turns ideas into Specs, Tech Stacks, Code, and a PDF Report."
   
   full_description: |
-    # SaaS Launchpad (Lite)
+    # SaaS Launchpad
     
     Turn a rough text idea into a technical blueprint and code skeleton in minutes. This agent simulates a mini engineering team to validate your concepts.
     
