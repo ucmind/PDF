@@ -30,15 +30,14 @@ class PDFGeneratorTool(BaseTool):
                 h1 { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-top: 30px; }
                 h2 { color: #e67e22; margin-top: 25px; border-bottom: 1px solid #eee; }
                 
-                /* 讓 xhtml2pdf 能夠正確渲染程式碼 */
                 pre {
                     font-family: Courier;
                     font-size: 9pt;
                     background-color: #f5f7f9;
                     border: 1px solid #ddd;
                     padding: 10px;
-                    white-space: pre-wrap; /* 關鍵：保留換行 */
-                    word-wrap: break-word; /* 關鍵：長行折行 */
+                    white-space: pre-wrap; 
+                    word-wrap: break-word; 
                 }
             </style>
             """

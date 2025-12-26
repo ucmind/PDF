@@ -2,7 +2,7 @@ version: "0.4.1"
 
 persona:
   name: "SaaS Launchpad"
-  version: "0.1.15"
+  version: "0.1.16"
   
   description: "Rapid MVP Architect. Turns ideas into Specs, Tech Stacks, Code, and a PDF Report."
   
@@ -12,7 +12,7 @@ persona:
     Turn a rough text idea into a technical blueprint and code skeleton in minutes. This agent simulates a mini engineering team to validate your concepts.
     
     ## How to Use
-    Simply describe your software idea in the **Project Idea** field. Be as specific as possible.
+    Simply describe your software idea in the field. Be as specific as possible.
     
     **Good Input Examples:**
     * "A Python script that scrapes Shopee prices daily and notifies me on Line."
